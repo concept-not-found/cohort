@@ -17,7 +17,7 @@ describe('server', () => {
 
     expect(response.statusCode).to.equal(200);
     expect(response.headers['Content-Type']).to.equal('application/json');
-    expect(response.body).to.eql({});
+    expect(response.data).to.eql({});
   });
 
   it('should GET what was PUT', () => {
@@ -34,7 +34,7 @@ describe('server', () => {
 
     expect(putResponse.statusCode).to.equal(200);
     expect(putResponse.headers['Content-Type']).to.equal('application/json');
-    expect(putResponse.body).to.eql({
+    expect(putResponse.data).to.eql({
       answer: 42
     });
 
@@ -46,7 +46,7 @@ describe('server', () => {
 
     expect(getResponse.statusCode).to.equal(200);
     expect(getResponse.headers['Content-Type']).to.equal('application/json');
-    expect(getResponse.body).to.eql({
+    expect(getResponse.data).to.eql({
       answer: 42
     });
   });
@@ -65,7 +65,7 @@ describe('server', () => {
 
     expect(putResponse.statusCode).to.equal(200);
     expect(putResponse.headers['Content-Type']).to.equal('application/json');
-    expect(putResponse.body).to.eql({
+    expect(putResponse.data).to.eql({
       answer: 42
     });
 
@@ -78,7 +78,7 @@ describe('server', () => {
 
     expect(deleteResponse.statusCode).to.equal(200);
     expect(deleteResponse.headers['Content-Type']).to.equal('application/json');
-    expect(deleteResponse.body).to.eql({});
+    expect(deleteResponse.data).to.eql({});
 
     const getRequest = new FakeHttpRequest();
     getRequest.url = '/';
@@ -88,6 +88,31 @@ describe('server', () => {
 
     expect(getResponse.statusCode).to.equal(200);
     expect(getResponse.headers['Content-Type']).to.equal('application/json');
-    expect(getResponse.body).to.eql({});
+    expect(getResponse.data).to.eql({});
+  });
+
+  it('should only accept JSON on PUT', () => {
+    const request = new FakeHttpRequest();
+    request.method = 'PUT';
+    request.url = '/';
+    request.body = 'Good day sir!';
+    const response = new FakeHttpResponse();
+
+    controller(request, response);
+
+    expect(response.statusCode).to.equal(400);
+  });
+
+  it('should only accept Object JSON on PUT', () => {
+    const request = new FakeHttpRequest();
+    request.method = 'PUT';
+    request.url = '/';
+    request.headers['Content-Type'] = 'application/json';
+    request.body = [];
+    const response = new FakeHttpResponse();
+
+    controller(request, response);
+
+    expect(response.statusCode).to.equal(400);
   });
 });

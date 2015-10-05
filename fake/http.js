@@ -16,12 +16,21 @@ class FakeHttpResponse {
   constructor() {
     this.headers = {};
     this.statusCode = 200;
-    this.body = undefined;
+    this.data = undefined;
+  }
+
+  status(statusCode) {
+    this.statusCode = statusCode;
+    return this;
+  }
+
+  body(data) {
+    this.data = data;
   }
 
   json(document) {
     this.headers['Content-Type'] = 'application/json';
-    this.body = document;
+    this.data = document;
   }
 }
 
