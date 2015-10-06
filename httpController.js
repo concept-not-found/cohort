@@ -4,7 +4,7 @@ const url = require('url');
 const R = require('ramda');
 
 module.exports = (router) => {
-  let key = [];
+  const key = [];
   let value = undefined;
 
   router.get('*', (request, response) => {
