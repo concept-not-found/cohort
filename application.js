@@ -9,6 +9,6 @@ const httpController = require('./httpController');
 const application = express();
 application.use(bodyParser.json());
 application.use(compression());
-application.use('/', httpController);
+application.use('/', httpController(express.Router()));
 
-module.export = application;
+module.exports = application;
