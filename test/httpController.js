@@ -8,33 +8,18 @@ const FakeHttpResponse = fakeHttp.FakeHttpResponse;
 const controller = require('../httpController');
 
 describe('server', () => {
-  it('should GET an empty document initially', () => {
+  it('should GET 404 initially', () => {
     const request = new FakeHttpRequest();
     request.url = '/';
     const response = new FakeHttpResponse();
 
     controller(request, response);
 
-    expect(response.statusCode).to.equal(200);
-    expect(response.headers['Content-Type']).to.equal('application/json');
-    expect(response.data).to.eql({});
+    expect(response.statusCode).to.equal(404);
   });
 
-  it('should GET what was PUT', () => {
-    const putRequest = new FakeHttpRequest();
-    putRequest.method = 'PUT';
-    putRequest.url = '/';
-    putRequest.headers['Content-Type'] = 'application/json';
-    putRequest.body = {
-      answer: 42
-    };
-    const putResponse = new FakeHttpResponse();
-
-    controller(putRequest, putResponse);
-
-    expect(putResponse.statusCode).to.equal(200);
-    expect(putResponse.headers['Content-Type']).to.equal('application/json');
-    expect(putResponse.data).to.eql({
+  it('should GET a value that exists', () => {
+    givenValueIs({
       answer: 42
     });
 
@@ -51,21 +36,8 @@ describe('server', () => {
     });
   });
 
-  it('should reset to an empty document on DELETE', () => {
-    const putRequest = new FakeHttpRequest();
-    putRequest.method = 'PUT';
-    putRequest.url = '/';
-    putRequest.headers['Content-Type'] = 'application/json';
-    putRequest.body = {
-      answer: 42
-    };
-    const putResponse = new FakeHttpResponse();
-
-    controller(putRequest, putResponse);
-
-    expect(putResponse.statusCode).to.equal(200);
-    expect(putResponse.headers['Content-Type']).to.equal('application/json');
-    expect(putResponse.data).to.eql({
+  it('should reset to 404 on DELETE', () => {
+    givenValueIs({
       answer: 42
     });
 
@@ -76,19 +48,7 @@ describe('server', () => {
 
     controller(deleteRequest, deleteResponse);
 
-    expect(deleteResponse.statusCode).to.equal(200);
-    expect(deleteResponse.headers['Content-Type']).to.equal('application/json');
-    expect(deleteResponse.data).to.eql({});
-
-    const getRequest = new FakeHttpRequest();
-    getRequest.url = '/';
-    const getResponse = new FakeHttpResponse();
-
-    controller(getRequest, getResponse);
-
-    expect(getResponse.statusCode).to.equal(200);
-    expect(getResponse.headers['Content-Type']).to.equal('application/json');
-    expect(getResponse.data).to.eql({});
+    assertValueDoesNotExist();
   });
 
   it('should only accept JSON on PUT', () => {
@@ -116,3 +76,24 @@ describe('server', () => {
     expect(response.statusCode).to.equal(400);
   });
 });
+
+function givenValueIs(value) {
+  const request = new FakeHttpRequest();
+  request.method = 'PUT';
+  request.url = '/';
+  request.headers['Content-Type'] = 'application/json';
+  request.body = value;
+  const response = new FakeHttpResponse();
+
+  controller(request, response);
+}
+
+function assertValueDoesNotExist() {
+  const request = new FakeHttpRequest();
+  request.url = '/';
+  const response = new FakeHttpResponse();
+
+  controller(request, response);
+
+  expect(response.statusCode).to.equal(404);
+}

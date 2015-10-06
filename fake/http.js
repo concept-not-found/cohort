@@ -24,6 +24,10 @@ class FakeHttpResponse {
     return this;
   }
 
+  sendStatus(statusCode) {
+    this.statusCode = statusCode;
+  }
+
   body(data) {
     this.data = data;
   }

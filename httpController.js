@@ -6,7 +6,7 @@ const express = require('express');
 const router = express.Router();
 
 const key = [];
-let value = {};
+let value = undefined;
 
 function parsePath(requestUrl) {
   const path = url.parse(requestUrl).pathname;
@@ -18,7 +18,7 @@ function parsePath(requestUrl) {
 
 router.get('*', (request, response) => {
   const path = parsePath(request.url);
-  if (!R.equals(key, path)) {
+  if (value === undefined || !R.equals(key, path)) {
     return response.sendStatus(404);
   }
   response.json(value);
@@ -41,11 +41,11 @@ router.put('*', (request, response) => {
 
 router.delete('*', (request, response) => {
   const path = parsePath(request.url);
-  if (!R.equals(key, path)) {
+  if (value === undefined || !R.equals(key, path)) {
     return response.sendStatus(404);
   }
-  value = {};
-  response.json(value);
+  value = undefined;
+  response.sendStatus(204);
 });
 
 module.exports = router;
