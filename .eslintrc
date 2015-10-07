@@ -242,12 +242,6 @@
     "key-spacing": [
       2
     ],
-    "new-cap": [
-      2,
-      {
-        "properties": false
-      }
-    ],
     "new-parens": [
       2
     ],

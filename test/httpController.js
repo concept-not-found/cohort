@@ -39,6 +39,23 @@ describe('server', () => {
     });
   });
 
+  it('should GET by path', () => {
+    const controller = httpController(express.Router());
+    givenValueIs(controller, {
+      answer: 42
+    });
+
+    const getRequest = new FakeHttpRequest();
+    getRequest.url = '/answer';
+    const getResponse = new FakeHttpResponse();
+
+    controller(getRequest, getResponse);
+
+    expect(getResponse.statusCode).to.equal(200);
+    expect(getResponse.headers['Content-Type']).to.equal('application/json');
+    expect(getResponse.data).to.equal(42);
+  });
+
   it('should reset to 404 on DELETE', () => {
     const controller = httpController(express.Router());
     givenValueIs(controller, {
