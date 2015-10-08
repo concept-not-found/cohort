@@ -13,10 +13,11 @@ class FakeHttpRequest {
 }
 
 class FakeHttpResponse {
-  constructor() {
+  constructor(callback) {
     this.headers = {};
     this.statusCode = 200;
     this.data = undefined;
+    this.callback = callback || function() {};
   }
 
   status(statusCode) {
@@ -26,15 +27,22 @@ class FakeHttpResponse {
 
   sendStatus(statusCode) {
     this.statusCode = statusCode;
+    this.end();
   }
 
   body(data) {
     this.data = data;
+    this.end();
   }
 
   json(document) {
     this.headers['Content-Type'] = 'application/json';
     this.data = document;
+    this.end();
+  }
+
+  end() {
+    setImmediate(this.callback);
   }
 }
 

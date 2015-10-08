@@ -9,94 +9,99 @@ const FakeHttpResponse = fakeHttp.FakeHttpResponse;
 const httpController = require('../httpController');
 
 describe('server', () => {
-  it('should GET 404 initially', () => {
+  it('should GET 404 initially', (done) => {
     const request = new FakeHttpRequest();
     request.url = '/';
-    const response = new FakeHttpResponse();
+    const response = new FakeHttpResponse(() => {
+      expect(response.statusCode).to.equal(404);
+      done();
+    });
 
     const controller = httpController(express.Router());
     controller(request, response);
-
-    expect(response.statusCode).to.equal(404);
   });
 
-  it('should GET a value that exists', () => {
+  it('should GET a value that exists', (done) => {
     const controller = httpController(express.Router());
     givenValueIs(controller, {
       answer: 42
     });
 
-    const getRequest = new FakeHttpRequest();
-    getRequest.url = '/';
-    const getResponse = new FakeHttpResponse();
-
-    controller(getRequest, getResponse);
-
-    expect(getResponse.statusCode).to.equal(200);
-    expect(getResponse.headers['Content-Type']).to.equal('application/json');
-    expect(getResponse.data).to.eql({
-      answer: 42
+    const request = new FakeHttpRequest();
+    request.url = '/';
+    const response = new FakeHttpResponse(() => {
+      expect(response.statusCode).to.equal(200);
+      expect(response.headers['Content-Type']).to.equal('application/json');
+      expect(response.data).to.eql({
+        answer: 42
+      });
+      done();
     });
+
+    controller(request, response);
   });
 
-  it('should GET by path', () => {
+  it('should GET by path', (done) => {
     const controller = httpController(express.Router());
     givenValueIs(controller, {
       answer: 42
     });
 
-    const getRequest = new FakeHttpRequest();
-    getRequest.url = '/answer';
-    const getResponse = new FakeHttpResponse();
+    const request = new FakeHttpRequest();
+    request.url = '/answer';
+    const response = new FakeHttpResponse(() => {
+      expect(response.statusCode).to.equal(200);
+      expect(response.headers['Content-Type']).to.equal('application/json');
+      expect(response.data).to.equal(42);
+      done();
+    });
 
-    controller(getRequest, getResponse);
-
-    expect(getResponse.statusCode).to.equal(200);
-    expect(getResponse.headers['Content-Type']).to.equal('application/json');
-    expect(getResponse.data).to.equal(42);
+    controller(request, response);
   });
 
-  it('should reset to 404 on DELETE', () => {
+  it('should reset to 404 on DELETE', (done) => {
     const controller = httpController(express.Router());
     givenValueIs(controller, {
       answer: 42
     });
 
-    const deleteRequest = new FakeHttpRequest();
-    deleteRequest.method = 'DELETE';
-    deleteRequest.url = '/';
-    const deleteResponse = new FakeHttpResponse();
+    const request = new FakeHttpRequest();
+    request.method = 'DELETE';
+    request.url = '/';
+    const response = new FakeHttpResponse();
 
-    controller(deleteRequest, deleteResponse);
+    controller(request, response);
 
-    assertValueDoesNotExist(controller);
+    assertValueDoesNotExist(controller, done);
   });
 
-  it('should only accept JSON on PUT', () => {
+  it('should only accept JSON on PUT', (done) => {
     const request = new FakeHttpRequest();
     request.method = 'PUT';
     request.url = '/';
     request.body = 'Good day sir!';
-    const response = new FakeHttpResponse();
+    const response = new FakeHttpResponse(() => {
+      expect(response.statusCode).to.equal(400);
+      done();
+    });
 
     const controller = httpController(express.Router());
     controller(request, response);
-
-    expect(response.statusCode).to.equal(400);
   });
 
-  it('should only accept Object JSON on PUT', () => {
+  it('should only accept Object JSON on PUT', (done) => {
     const request = new FakeHttpRequest();
     request.method = 'PUT';
     request.url = '/';
     request.headers['Content-Type'] = 'application/json';
     request.body = [];
-    const response = new FakeHttpResponse();
+    const response = new FakeHttpResponse(() => {
+      expect(response.statusCode).to.equal(400);
+      done();
+    });
 
     const controller = httpController(express.Router());
     controller(request, response);
-
-    expect(response.statusCode).to.equal(400);
   });
 });
 
@@ -111,12 +116,13 @@ function givenValueIs(controller, value) {
   controller(request, response);
 }
 
-function assertValueDoesNotExist(controller) {
+function assertValueDoesNotExist(controller, done) {
   const request = new FakeHttpRequest();
   request.url = '/';
-  const response = new FakeHttpResponse();
+  const response = new FakeHttpResponse(() => {
+    expect(response.statusCode).to.equal(404);
+    done();
+  });
 
   controller(request, response);
-
-  expect(response.statusCode).to.equal(404);
 }

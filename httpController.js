@@ -2,50 +2,17 @@
 
 const url = require('url');
 const R = require('ramda');
-const Immutable = require('seamless-immutable');
-
-function Case(name) {
-  const values = [];
-  for (let i = 1; i < arguments.length; i++) {
-    values.push(arguments[i]);
-  }
-  return Immutable({
-    name,
-    values
-  });
-}
-
-function match(c) {
-  const cases = {};
-  return {
-    is(name, closure) {
-      cases[name] = closure;
-      return this;
-    },
-    otherwise(closure) {
-      const matching = cases[c.name];
-      if (matching) {
-        matching.apply(this, c.values);
-      } else {
-        closure();
-      }
-    }
-  };
-}
 
 function walk(value, path) {
-  if (value === undefined) {
-    return Case('not found');
-  }
-  if (R.isEmpty(path)) {
-    return Case('found', value);
+  if (value === undefined || R.isEmpty(path)) {
+    return Promise.resolve(value);
   }
   const valueType = typeof value;
   if (valueType !== 'object') {
-    return Case('error', `expected object, but got ${valueType}`);
+    return Promise.reject(`expected object, but got ${valueType}`);
   }
   if (R.isArrayLike(value)) {
-    return Case('error', 'expected object, but got array');
+    return Promise.reject('expected object, but got array');
   }
 
   const next = path[0];
@@ -58,11 +25,14 @@ module.exports = (router) => {
 
   router.get('*', (request, response, next) => {
     const path = parsePath(request.url);
-    match(walk(value, path))
-      .is('not found', () => response.sendStatus(404))
-      .is('found', (foundValue) => response.json(foundValue))
-      .is('error', next)
-      .otherwise();
+    walk(value, path)
+      .then((found) => {
+        if (found === undefined) {
+          return response.sendStatus(404);
+        }
+        return response.json(found);
+      })
+      .catch(next);
   });
 
   router.put('*', (request, response) => {
