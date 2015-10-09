@@ -13,11 +13,13 @@ class FakeHttpRequest {
 }
 
 class FakeHttpResponse {
-  constructor(callback) {
+  constructor() {
     this.headers = {};
     this.statusCode = 200;
     this.data = undefined;
-    this.callback = callback || function() {};
+    this.endPromise = new Promise((resolve) => {
+      this.resolveEnd = resolve;
+    });
   }
 
   status(statusCode) {
@@ -42,7 +44,11 @@ class FakeHttpResponse {
   }
 
   end() {
-    setImmediate(this.callback);
+    setImmediate(this.resolveEnd);
+  }
+
+  onEnd() {
+    return this.endPromise;
   }
 }
 

@@ -2,6 +2,7 @@
 
 const url = require('url');
 const R = require('ramda');
+const co = require('co-express');
 
 function walk(value, path) {
   if (value === undefined || R.isEmpty(path)) {
@@ -23,17 +24,14 @@ module.exports = (router) => {
   const key = [];
   let value = undefined;
 
-  router.get('*', (request, response, next) => {
+  router.get('*', co(function *(request, response) {
     const path = parsePath(request.url);
-    walk(value, path)
-      .then((found) => {
-        if (found === undefined) {
-          return response.sendStatus(404);
-        }
-        return response.json(found);
-      })
-      .catch(next);
-  });
+    const found = yield walk(value, path);
+    if (found === undefined) {
+      return response.sendStatus(404);
+    }
+    return response.json(found);
+  }));
 
   router.put('*', (request, response) => {
     const path = parsePath(request.url);
