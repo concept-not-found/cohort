@@ -15,16 +15,15 @@ function walk(value, path, closure) {
   if (R.isArrayLike(value)) {
     return Promise.reject('expected object, but got array');
   }
-  if (path.length === 1) {
-    return closure(value, path[0]);
-  }
 
   const next = path[0];
+  if (path.length === 1) {
+    return closure(value, next);
+  }
   return walk(value[next], path.slice(1));
 }
 
 module.exports = (router) => {
-  const key = [];
   let value = undefined;
 
   router.get('*', co(function *(request, response) {
@@ -53,8 +52,11 @@ module.exports = (router) => {
     try {
       const found = yield walk(value, path, (parent, last) => {
         if (parent === undefined) {
-          value = request.body;
-          return Promise.resolve(value);
+          if (last === undefined) {
+            value = request.body;
+            return Promise.resolve(value);
+          }
+          return Promise.resolve(parent);
         }
         parent[last] = request.body;
         return Promise.resolve(parent[last]);
@@ -68,14 +70,28 @@ module.exports = (router) => {
     }
   }));
 
-  router.delete('*', (request, response) => {
+  router.delete('*', co(function *(request, response) {
     const path = parsePath(request.url);
-    if (value === undefined || !R.equals(key, path)) {
-      return response.sendStatus(404);
+    try {
+      const found = yield walk(value, path, (parent, last) => {
+        if (parent === undefined) {
+          return Promise.resolve(parent);
+        }
+        if (last === undefined) {
+          value = undefined;
+          return Promise.resolve(value);
+        }
+        delete parent[last];
+        return Promise.resolve(parent);
+      });
+      if (found === undefined) {
+        return response.sendStatus(404);
+      }
+      return response.sendStatus(204);
+    } catch (error) {
+      return response.status(400).body(error);
     }
-    value = undefined;
-    response.sendStatus(204);
-  });
+  }));
 
   return router;
 };

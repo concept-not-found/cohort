@@ -72,6 +72,24 @@ describe('server', () => {
     });
   });
 
+  it('should DELETE by path', function *() {
+    const controller = httpController(express.Router());
+    yield givenValueIs(controller, {
+      answer: 42
+    });
+
+    const request = new FakeHttpRequest();
+    request.method = 'DELETE';
+    request.url = '/answer';
+    request.headers['Content-Type'] = 'application/json';
+    const response = new FakeHttpResponse();
+
+    controller(request, response);
+
+    yield response.onEnd();
+    return assertValueIs(controller, {});
+  });
+
   it('should fail to GET by path for arrays', function *() {
     const controller = httpController(express.Router());
     yield givenValueIs(controller, [
