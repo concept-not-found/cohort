@@ -4,9 +4,9 @@ const url = require('url');
 const R = require('ramda');
 const co = require('co-express');
 
-function walk(value, path) {
+function walk(value, path, closure) {
   if (value === undefined || R.isEmpty(path)) {
-    return Promise.resolve(value);
+    return Promise.resolve(closure(value, undefined));
   }
   const valueType = typeof value;
   if (valueType !== 'object') {
@@ -14,6 +14,9 @@ function walk(value, path) {
   }
   if (R.isArrayLike(value)) {
     return Promise.reject('expected object, but got array');
+  }
+  if (path.length === 1) {
+    return closure(value, path[0]);
   }
 
   const next = path[0];
@@ -27,7 +30,12 @@ module.exports = (router) => {
   router.get('*', co(function *(request, response) {
     const path = parsePath(request.url);
     try {
-      const found = yield walk(value, path);
+      const found = yield walk(value, path, (parent, last) => {
+        if (parent === undefined || last === undefined) {
+          return Promise.resolve(parent);
+        }
+        return Promise.resolve(parent[last]);
+      });
       if (found === undefined) {
         return response.sendStatus(404);
       }
@@ -37,17 +45,28 @@ module.exports = (router) => {
     }
   }));
 
-  router.put('*', (request, response) => {
+  router.put('*', co(function *(request, response) {
     const path = parsePath(request.url);
     if (!request.is('application/json')) {
       return response.status(400).body('Content-Type must be application/json');
     }
-    if (!R.equals(key, path)) {
-      return response.sendStatus(404);
+    try {
+      const found = yield walk(value, path, (parent, last) => {
+        if (parent === undefined) {
+          value = request.body;
+          return Promise.resolve(value);
+        }
+        parent[last] = request.body;
+        return Promise.resolve(parent[last]);
+      });
+      if (found === undefined) {
+        return response.sendStatus(404);
+      }
+      return response.json(found);
+    } catch (error) {
+      return response.status(400).body(error);
     }
-    value = request.body;
-    response.json(value);
-  });
+  }));
 
   router.delete('*', (request, response) => {
     const path = parsePath(request.url);
