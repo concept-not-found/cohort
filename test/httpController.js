@@ -62,6 +62,36 @@ describe('server', () => {
     expect(response.data).to.equal(42);
   });
 
+  it('should fail to GET by path for arrays', function *() {
+    const controller = httpController(express.Router());
+    givenValueIs(controller, [
+      42
+    ]);
+
+    const request = new FakeHttpRequest();
+    request.url = '/answer';
+    const response = new FakeHttpResponse();
+
+    controller(request, response);
+
+    yield response.onEnd();
+    expect(response.statusCode).to.equal(400);
+  });
+
+  it('should fail to GET by path for non-objects', function *() {
+    const controller = httpController(express.Router());
+    givenValueIs(controller, 42);
+
+    const request = new FakeHttpRequest();
+    request.url = '/answer';
+    const response = new FakeHttpResponse();
+
+    controller(request, response);
+
+    yield response.onEnd();
+    expect(response.statusCode).to.equal(400);
+  });
+
   it('should reset to 404 on DELETE', function *() {
     const controller = httpController(express.Router());
     givenValueIs(controller, {
@@ -84,21 +114,6 @@ describe('server', () => {
     request.method = 'PUT';
     request.url = '/';
     request.body = 'Good day sir!';
-    const response = new FakeHttpResponse();
-
-    const controller = httpController(express.Router());
-    controller(request, response);
-
-    yield response.onEnd();
-    expect(response.statusCode).to.equal(400);
-  });
-
-  it('should only accept Object JSON on PUT', function *() {
-    const request = new FakeHttpRequest();
-    request.method = 'PUT';
-    request.url = '/';
-    request.headers['Content-Type'] = 'application/json';
-    request.body = [];
     const response = new FakeHttpResponse();
 
     const controller = httpController(express.Router());

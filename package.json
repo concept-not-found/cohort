@@ -4,7 +4,7 @@
   "description": "A self regulated JSON database.",
   "main": "server.js",
   "scripts": {
-    "test": "./node_modules/.bin/_mocha --reporter spec --recursive"
+    "test": "istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- --reporter spec --recursive && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
   },
   "repository": {
     "type": "git",
@@ -33,6 +33,9 @@
   "devDependencies": {
     "chai": "^3.3.0",
     "co-mocha": "^1.1.2",
-    "mocha": "^2.3.3"
+    "coveralls": "^2.11.4",
+    "istanbul": "^0.3.22",
+    "mocha": "^2.3.3",
+    "mocha-lcov-reporter": "^1.0.0"
   }
 }

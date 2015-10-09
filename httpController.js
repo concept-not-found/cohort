@@ -26,11 +26,15 @@ module.exports = (router) => {
 
   router.get('*', co(function *(request, response) {
     const path = parsePath(request.url);
-    const found = yield walk(value, path);
-    if (found === undefined) {
-      return response.sendStatus(404);
+    try {
+      const found = yield walk(value, path);
+      if (found === undefined) {
+        return response.sendStatus(404);
+      }
+      return response.json(found);
+    } catch (error) {
+      return response.status(400).body(error);
     }
-    return response.json(found);
   }));
 
   router.put('*', (request, response) => {
@@ -40,9 +44,6 @@ module.exports = (router) => {
     }
     if (!R.equals(key, path)) {
       return response.sendStatus(404);
-    }
-    if (!R.is(Object, request.body) || R.isArrayLike(request.body)) {
-      return response.status(400).body('body must be a JSON object');
     }
     value = request.body;
     response.json(value);

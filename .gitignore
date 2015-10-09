@@ -1,3 +1,5 @@
 .idea/
 node_modules/
+converage/
+.coveralls.yml
 npm-debug.log
