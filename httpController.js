@@ -2,7 +2,8 @@
 
 const url = require('url');
 const R = require('ramda');
-const co = require('co-express');
+const co = require('co');
+const coExpress = require('co-express');
 
 function walk(value, path, closure) {
   if (value === undefined || R.isEmpty(path)) {
@@ -23,74 +24,62 @@ function walk(value, path, closure) {
   return walk(value[next], path.slice(1));
 }
 
+function controller(request, response, value, closure, onFound) {
+  return co(function *() {
+    const path = parsePath(request.url);
+    try {
+      const found = yield walk(value, path, closure);
+      if (found === undefined) {
+        return response.sendStatus(404);
+      }
+      return onFound(found);
+    } catch (error) {
+      return response.status(400).body(error);
+    }
+  });
+}
+
 module.exports = (router) => {
   let value = undefined;
 
-  router.get('*', co(function *(request, response) {
-    const path = parsePath(request.url);
-    try {
-      const found = yield walk(value, path, (parent, last) => {
-        if (parent === undefined || last === undefined) {
-          return Promise.resolve(parent);
-        }
-        return Promise.resolve(parent[last]);
-      });
-      if (found === undefined) {
-        return response.sendStatus(404);
+  router.get('*', coExpress(function *(request, response) {
+    yield controller(request, response, value, (parent, last) => {
+      if (parent === undefined || last === undefined) {
+        return Promise.resolve(parent);
       }
-      return response.json(found);
-    } catch (error) {
-      return response.status(400).body(error);
-    }
+      return Promise.resolve(parent[last]);
+    }, (found) => response.json(found));
   }));
 
-  router.put('*', co(function *(request, response) {
-    const path = parsePath(request.url);
+  router.put('*', coExpress(function *(request, response) {
     if (!request.is('application/json')) {
       return response.status(400).body('Content-Type must be application/json');
     }
-    try {
-      const found = yield walk(value, path, (parent, last) => {
-        if (parent === undefined) {
-          if (last === undefined) {
-            value = request.body;
-            return Promise.resolve(value);
-          }
-          return Promise.resolve(parent);
-        }
-        parent[last] = request.body;
-        return Promise.resolve(parent[last]);
-      });
-      if (found === undefined) {
-        return response.sendStatus(404);
-      }
-      return response.json(found);
-    } catch (error) {
-      return response.status(400).body(error);
-    }
-  }));
-
-  router.delete('*', co(function *(request, response) {
-    const path = parsePath(request.url);
-    try {
-      const found = yield walk(value, path, (parent, last) => {
-        if (parent === undefined) {
-          return Promise.resolve(parent);
-        }
+    yield controller(request, response, value, (parent, last) => {
+      if (parent === undefined) {
         if (last === undefined) {
-          value = undefined;
+          value = request.body;
           return Promise.resolve(value);
         }
-        delete parent[last];
         return Promise.resolve(parent);
-      });
-      if (found === undefined) {
-        return response.sendStatus(404);
       }
-      return response.sendStatus(204);
-    } catch (error) {
-      return response.status(400).body(error);
-    }
+      parent[last] = request.body;
+      return Promise.resolve(parent[last]);
+    }, (found) => response.json(found));
+  }));
+
+  router.delete('*', coExpress(function *(request, response) {
+    yield controller(request, response, value, (parent, last) => {
+      if (parent === undefined) {
+        return Promise.resolve(parent);
+      }
+      if (last === undefined) {
+        value = undefined;
+        return Promise.resolve(value);
+      }
+      delete parent[last];
+      return Promise.resolve(true);
+    }, () => response.sendStatus(204));
   }));
 
   return router;
