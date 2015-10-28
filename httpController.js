@@ -34,7 +34,7 @@ function controller(request, response, value, closure, onFound) {
       }
       return onFound(found);
     } catch (error) {
-      return response.status(400).body(error);
+      return response.status(400).send(error);
     }
   });
 }
@@ -53,7 +53,7 @@ module.exports = (router) => {
 
   router.put('*', coExpress(function *(request, response) {
     if (!request.is('application/json')) {
-      return response.status(400).body('Content-Type must be application/json');
+      return response.status(400).send('content-type must be application/json');
     }
     yield controller(request, response, value, (parent, last) => {
       if (parent === undefined) {

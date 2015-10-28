@@ -6,22 +6,19 @@ const co = require('co');
 const expect = require('chai').expect;
 require('co-mocha');
 
-const fakeHttp = require('../fake/http');
-const FakeHttpRequest = fakeHttp.FakeHttpRequest;
-const FakeHttpResponse = fakeHttp.FakeHttpResponse;
+const FakeExpressHttp = require('fake-express-http');
 const httpController = require('../httpController');
 
 describe('server', () => {
   it('should GET 404 initially', function *() {
-    const request = new FakeHttpRequest();
-    request.url = '/';
-    const response = new FakeHttpResponse();
+    const fakeHttp = new FakeExpressHttp();
+    fakeHttp.request.url = '/';
 
     const controller = httpController(express.Router());
-    controller(request, response);
+    controller(fakeHttp.request, fakeHttp.response, fakeHttp.next);
 
-    yield response.onEnd();
-    expect(response.statusCode).to.equal(404);
+    yield fakeHttp.response.onEnd();
+    expect(fakeHttp.response.statusCode).to.equal(404);
   });
 
   it('should GET a value that was PUT', function *() {
@@ -41,32 +38,30 @@ describe('server', () => {
       answer: 42
     });
 
-    const request = new FakeHttpRequest();
-    request.url = '/answer';
-    const response = new FakeHttpResponse();
+    const fakeHttp = new FakeExpressHttp();
+    fakeHttp.request.url = '/answer';
 
-    controller(request, response);
+    controller(fakeHttp.request, fakeHttp.response, fakeHttp.next);
 
-    yield response.onEnd();
-    expect(response.statusCode).to.equal(200);
-    expect(response.headers['Content-Type']).to.equal('application/json');
-    expect(response.data).to.equal(42);
+    yield fakeHttp.response.onEnd();
+    expect(fakeHttp.response.statusCode).to.equal(200);
+    expect(fakeHttp.response.headers['content-type']).to.equal('application/json');
+    expect(fakeHttp.response.content).to.equal('42');
   });
 
   it('should PUT by path', function *() {
     const controller = httpController(express.Router());
     yield givenValueIs(controller, {});
 
-    const request = new FakeHttpRequest();
-    request.method = 'PUT';
-    request.url = '/answer';
-    request.headers['Content-Type'] = 'application/json';
-    request.body = 42;
-    const response = new FakeHttpResponse();
+    const fakeHttp = new FakeExpressHttp();
+    fakeHttp.request.method = 'PUT';
+    fakeHttp.request.url = '/answer';
+    fakeHttp.request.headers['content-type'] = 'application/json';
+    fakeHttp.request.body = 42;
 
-    controller(request, response);
+    controller(fakeHttp.request, fakeHttp.response, fakeHttp.next);
 
-    yield response.onEnd();
+    yield fakeHttp.response.onEnd();
     return assertValueIs(controller, {
       answer: 42
     });
@@ -78,15 +73,14 @@ describe('server', () => {
       answer: 42
     });
 
-    const request = new FakeHttpRequest();
-    request.method = 'DELETE';
-    request.url = '/answer';
-    request.headers['Content-Type'] = 'application/json';
-    const response = new FakeHttpResponse();
+    const fakeHttp = new FakeExpressHttp();
+    fakeHttp.request.method = 'DELETE';
+    fakeHttp.request.url = '/answer';
+    fakeHttp.request.headers['content-type'] = 'application/json';
 
-    controller(request, response);
+    controller(fakeHttp.request, fakeHttp.response, fakeHttp.next);
 
-    yield response.onEnd();
+    yield fakeHttp.response.onEnd();
     return assertValueIs(controller, {});
   });
 
@@ -96,28 +90,26 @@ describe('server', () => {
       42
     ]);
 
-    const request = new FakeHttpRequest();
-    request.url = '/answer';
-    const response = new FakeHttpResponse();
+    const fakeHttp = new FakeExpressHttp();
+    fakeHttp.request.url = '/answer';
 
-    controller(request, response);
+    controller(fakeHttp.request, fakeHttp.response, fakeHttp.next);
 
-    yield response.onEnd();
-    expect(response.statusCode).to.equal(400);
+    yield fakeHttp.response.onEnd();
+    expect(fakeHttp.response.statusCode).to.equal(400);
   });
 
   it('should fail to GET by path for non-objects', function *() {
     const controller = httpController(express.Router());
     yield givenValueIs(controller, 42);
 
-    const request = new FakeHttpRequest();
-    request.url = '/answer';
-    const response = new FakeHttpResponse();
+    const fakeHttp = new FakeExpressHttp();
+    fakeHttp.request.url = '/answer';
 
-    controller(request, response);
+    controller(fakeHttp.request, fakeHttp.response, fakeHttp.next);
 
-    yield response.onEnd();
-    expect(response.statusCode).to.equal(400);
+    yield fakeHttp.response.onEnd();
+    expect(fakeHttp.response.statusCode).to.equal(400);
   });
 
   it('should reset to 404 on DELETE', function *() {
@@ -126,68 +118,63 @@ describe('server', () => {
       answer: 42
     });
 
-    const request = new FakeHttpRequest();
-    request.method = 'DELETE';
-    request.url = '/';
-    const response = new FakeHttpResponse();
+    const fakeHttp = new FakeExpressHttp();
+    fakeHttp.request.method = 'DELETE';
+    fakeHttp.request.url = '/';
 
-    controller(request, response);
+    controller(fakeHttp.request, fakeHttp.response, fakeHttp.next);
 
-    yield response.onEnd();
+    yield fakeHttp.response.onEnd();
     return assertValueDoesNotExist(controller);
   });
 
   it('should only accept JSON on PUT', function *() {
-    const request = new FakeHttpRequest();
-    request.method = 'PUT';
-    request.url = '/';
-    request.body = 'Good day sir!';
-    const response = new FakeHttpResponse();
+    const fakeHttp = new FakeExpressHttp();
+    fakeHttp.request.method = 'PUT';
+    fakeHttp.request.url = '/';
+    fakeHttp.request.body = 'Good day sir!';
 
     const controller = httpController(express.Router());
-    controller(request, response);
+    controller(fakeHttp.request, fakeHttp.response, fakeHttp.next);
 
-    yield response.onEnd();
-    expect(response.statusCode).to.equal(400);
+    yield fakeHttp.response.onEnd();
+    expect(fakeHttp.response.statusCode).to.equal(400);
   });
 });
 
 function givenValueIs(controller, value) {
-  const request = new FakeHttpRequest();
-  request.method = 'PUT';
-  request.url = '/';
-  request.headers['Content-Type'] = 'application/json';
-  request.body = value;
-  const response = new FakeHttpResponse();
+  const fakeHttp = new FakeExpressHttp();
+  fakeHttp.request.method = 'PUT';
+  fakeHttp.request.url = '/';
+  fakeHttp.request.headers['content-type'] = 'application/json';
+  fakeHttp.request.body = value;
 
-  controller(request, response);
-  return response.onEnd();
+  controller(fakeHttp.request, fakeHttp.response, fakeHttp.next);
+  return fakeHttp.response.onEnd();
 }
 
 function assertValueDoesNotExist(controller) {
   return co(function *() {
-    const request = new FakeHttpRequest();
-    request.url = '/';
-    const response = new FakeHttpResponse();
+    const fakeHttp = new FakeExpressHttp();
+    fakeHttp.request.url = '/';
 
-    controller(request, response);
+    controller(fakeHttp.request, fakeHttp.response, fakeHttp.next);
 
-    yield response.onEnd();
-    expect(response.statusCode).to.equal(404);
+    yield fakeHttp.response.onEnd();
+    expect(fakeHttp.response.statusCode).to.equal(404);
   });
 }
 
 function assertValueIs(controller, expected) {
   return co(function *() {
-    const request = new FakeHttpRequest();
-    request.url = '/';
-    const response = new FakeHttpResponse();
+    const fakeHttp = new FakeExpressHttp();
+    fakeHttp.request.url = '/';
 
-    controller(request, response);
+    controller(fakeHttp.request, fakeHttp.response, fakeHttp.next);
 
-    yield response.onEnd();
-    expect(response.statusCode).to.equal(200);
-    expect(response.headers['Content-Type']).to.equal('application/json');
-    expect(response.data).to.eql(expected);
+    yield fakeHttp.response.onEnd();
+    expect(fakeHttp.response.statusCode).to.equal(200);
+    expect(fakeHttp.response.headers['content-type']).to.equal('application/json');
+    expect(fakeHttp.response.content).to.eql(JSON.stringify(expected));
   });
 }
