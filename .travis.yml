@@ -1,9 +1,7 @@
 language: node_js
 node_js:
   - "4.1"
-before_script:
-  - npm install -g eslint
 script:
   - npm test
   - npm run-script send-coverage
-  - eslint --debug .
+  - ./node_modules/.bin/eslint --debug .
